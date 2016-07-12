@@ -164,6 +164,19 @@ class WpApi
     }
 
     /**
+     * Post a comment
+     *
+     * @param  int $year
+     * @param  int $month
+     * @param  int $page
+     * @return array
+     */
+    public function comment($comment)
+    {
+        return $this->_post('comments', $comment);
+    }
+
+    /**
      * Get data from the API
      *
      * @param  string $method
@@ -182,6 +195,53 @@ class WpApi
             }
 
             $response = $this->client->get($this->endpoint . $method, $query);
+
+            $return = [
+                'results' => json_decode((string) $response->getBody(), true),
+                'total'   => $response->getHeaderLine('X-WP-Total'),
+                'pages'   => $response->getHeaderLine('X-WP-TotalPages')
+            ];
+
+        } catch (RequestException $e) {
+
+            $error['message'] = $e->getMessage();
+
+            if ($e->getResponse()) {
+                $error['code'] = $e->getResponse()->getStatusCode();
+            }
+
+            $return = [
+                'error'   => $error,
+                'results' => [],
+                'total'   => 0,
+                'pages'   => 0
+            ];
+
+        }
+
+        return $return;
+
+    }
+
+    /**
+     * Get data from the API
+     *
+     * @param  string $method
+     * @param  array  $query
+     * @return array
+     */
+    public function _post($method, array $query = array())
+    {
+
+        try {
+
+            $query = ['query' => $query];
+
+            if ($this->auth) {
+                $query['auth'] = $this->auth;
+            }
+
+            $response = $this->client->post($this->endpoint . $method, $query);
 
             $return = [
                 'results' => json_decode((string) $response->getBody(), true),
